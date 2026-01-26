@@ -1,0 +1,52 @@
+Data_Cleaning_Silver_Layer :
+
+# Welcome to your new notebook
+# Type here in the cell editor to add code!
+df_customers = spark.sql("SELECT * FROM bronze_customers")
+df_customers.show()
+df_no_duplicates = df_customers.dropDuplicates(["customer_id"])
+df_valid_email = df_no_duplicates.filter("email IS NOT NULL")
+df_city_fixed = df_valid_email.fillna({"city": "Unknown"})
+from pyspark.sql.functions import to_date
+df_clean_customers = df_city_fixed.withColumn(
+    "signup_date",
+    to_date("signup_date", "yyyy-MM-dd")
+)
+df_clean_customers.show()
+df_clean_customers.write.mode("overwrite").saveAsTable("silver_customers")
+df_orders = spark.sql("SELECT * FROM bronze_orders")
+df_orders.show()
+df_orders_valid = df_orders.filter("order_amount > 0 AND payment_status = 'Completed'")
+df_orders_valid.write.mode("overwrite").saveAsTable("silver_orders")
+
+Gold_Analytics_Layer :
+
+# Welcome to your new notebook
+# Type here in the cell editor to add code!
+gold_customer_summary = spark.sql("""
+SELECT
+    customer_id,
+    customer_name,
+    city,
+    COUNT(customer_id) AS total_orders,
+    COUNT(customer_id) * 1.0 AS total_spent,
+    COUNT(customer_id) * 1.0 AS avg_order_value
+FROM silver_customers
+GROUP BY
+    customer_id,
+    customer_name,
+    city
+""")
+gold_customer_summary.show()
+gold_customer_summary.write \
+    .mode("overwrite") \
+    .format("delta") \
+    .saveAsTable("gold_customer_summary")
+spark.sql("SELECT * FROM gold_customer_summary").show()
+spark.sql("SHOW TABLES").show()
+gold_customer_summary.write \
+    .mode("overwrite") \
+    .format("delta") \
+    .saveAsTable("gold_customer_summary")
+
+
