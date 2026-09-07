@@ -141,8 +141,4 @@ Enable self-service BI
 
 Support business decision-making
 
-👤 Author
 
-Cliford H
-B.Tech – Artificial Intelligence & Data Science
-Aspiring Data Engineer | Microsoft Fabric | Power BI
